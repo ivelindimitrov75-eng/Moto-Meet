@@ -13,6 +13,7 @@ their bikes. This is the first step: the home page and the registration form.
 - The form checks the details and creates an account with Supabase.
 - The page shows a message when the account is made or when something goes
   wrong.
+- The page loads community updates from the Supabase `todos` table.
 
 ## Functional guide
 
@@ -25,7 +26,8 @@ events. This first step only has the start page and a registration form.
 
 - Guests can see the start page, choose a motorcycle photo, and create an
   account.
-- Event lists, bookings, and private pages are not made yet.
+- Event lists, bookings, and private pages are not made yet. The community
+  updates section reads rows from the `todos` table.
 
 ### 3. Sign in and accounts
 
@@ -45,12 +47,15 @@ Event lists and event details are not made yet.
 
 ### 6. Data
 
-Supabase Auth stores new accounts. Event and motorcycle data will be added in
-later steps.
+Supabase Auth stores new accounts. The home page also reads `id` and `name`
+fields from the Supabase `todos` table to display community updates. Copy
+`.env.example` to `.env` and set the Supabase project URL and publishable key
+before running the app.
 
 ### 7. Add, view, change, and delete
 
-Event and motorcycle actions are not made yet.
+Event and motorcycle actions are not made yet. Community updates are read-only;
+the page shows loading, empty, and error states when fetching them.
 
 ### 8. Forms
 
@@ -81,9 +86,20 @@ account.
 ### 11. Errors and empty pages
 
 The form shows missing details, passwords that do not match, and account
-creation errors. Event lists and their empty states will be added later.
+creation errors. Community updates show loading, empty, and query error states.
 
 ## Later steps
 
 Login, event pages, bookings, motorcycle details, and motorcycle photos will
 be added in later steps.
+
+### Step 2: Add the login page
+
+- Riders can open `/login` from the home page or the account form.
+- The login page uses the Supabase client to sign in with an email address
+  and password.
+- The page shows a clear message when sign-in succeeds or when something
+  goes wrong.
+- Riders can return to the registration form to create an account.
+- The login page uses the supplied motorcycle photo and adjusts for smaller
+  screens.

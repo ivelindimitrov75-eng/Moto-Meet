@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 
 const ridePhotos = [
@@ -31,6 +31,51 @@ export default function App() {
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [todos, setTodos] = useState([]);
+  const [todosError, setTodosError] = useState("");
+  const [isLoadingTodos, setIsLoadingTodos] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function getTodos() {
+      if (!supabase) {
+        setTodosError(
+          "Community updates are unavailable. Please check the Supabase settings.",
+        );
+        setIsLoadingTodos(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.from("todos").select();
+
+        if (!isMounted) return;
+
+        if (error) {
+          setTodosError(`We could not load community updates: ${error.message}`);
+        } else {
+          setTodos(data ?? []);
+        }
+      } catch (error) {
+        if (!isMounted) return;
+
+        setTodosError(
+          `We could not load community updates: ${
+            error instanceof Error ? error.message : "An unexpected error occurred."
+          }`,
+        );
+      } finally {
+        if (isMounted) setIsLoadingTodos(false);
+      }
+    }
+
+    getTodos();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -124,6 +169,7 @@ export default function App() {
         <nav className="main-nav" aria-label="Main navigation">
           <a href="#ride">The ride</a>
           <a href="#community">The community</a>
+          <a href="/login">Log in</a>
           <a className="nav-join" href="#join">
             Join us <span aria-hidden="true">↗</span>
           </a>
@@ -186,6 +232,33 @@ export default function App() {
               TOGETHER
             </div>
           </div>
+        </section>
+
+        <section className="todos-section" aria-labelledby="todos-heading">
+          <div>
+            <p className="eyebrow">
+              <span className="eyebrow-line" />
+              FROM THE COMMUNITY
+            </p>
+            <h2 id="todos-heading">Community updates</h2>
+          </div>
+          {isLoadingTodos ? (
+            <p role="status">Loading community updates...</p>
+          ) : todosError ? (
+            <p className="todos-message error" role="alert">
+              {todosError}
+            </p>
+          ) : todos.length > 0 ? (
+            <ul className="todos-list">
+              {todos.map((todo) => (
+                <li key={todo.id}>{todo.name}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="todos-message" role="status">
+              There are no community updates yet.
+            </p>
+          )}
         </section>
 
         <section className="join-section" id="join">
@@ -294,6 +367,9 @@ export default function App() {
                 By joining, you agree to ride safe and look out for each other.
               </p>
             </form>
+            <p className="form-smallprint signup-login-link">
+              Already part of the crew? <a href="/login">Log in</a>
+            </p>
           </div>
         </section>
       </main>

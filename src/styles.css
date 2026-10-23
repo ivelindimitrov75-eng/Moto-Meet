@@ -213,6 +213,42 @@ p {
   margin-top: 30px;
 }
 
+.todos-section {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) 1fr;
+  align-items: start;
+  gap: 40px;
+  padding: 34px 4.4%;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.todos-section h2 {
+  margin-top: 12px;
+  font-family: var(--font-heading);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.todos-section > p,
+.todos-list,
+.todos-message {
+  color: #b8b9b3;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.todos-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.todos-message.error {
+  color: #ff9478;
+}
+
 .ride-note {
   display: flex;
   align-items: center;
@@ -525,6 +561,92 @@ p {
   text-align: center;
 }
 
+.signup-login-link {
+  margin-top: 14px;
+}
+
+.signup-login-link a,
+.login-signup-link a {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.login-page {
+  width: min(100% - 96px, 1280px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 30px 0;
+}
+
+.login-brand {
+  margin-bottom: 28px;
+}
+
+.login-layout {
+  display: grid;
+  min-height: min(690px, calc(100vh - 120px));
+  grid-template-columns: 1.1fr 0.9fr;
+  border: 1px solid rgb(255 255 255 / 9%);
+  background: var(--color-panel);
+  box-shadow: 0 22px 60px rgb(0 0 0 / 22%);
+}
+
+.login-photo {
+  position: relative;
+  min-height: 510px;
+  overflow: hidden;
+  background: #222;
+}
+
+.login-photo::after {
+  position: absolute;
+  background: linear-gradient(0deg, rgb(0 0 0 / 82%), transparent 60%);
+  content: "";
+  inset: 0;
+}
+
+.login-photo img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  object-fit: cover;
+}
+
+.login-photo-caption {
+  position: absolute;
+  z-index: 1;
+  right: 30px;
+  bottom: 30px;
+  left: 30px;
+}
+
+.login-photo-caption > p:last-child {
+  margin-top: 10px;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: clamp(25px, 3vw, 39px);
+  text-transform: uppercase;
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(28px, 5vw, 64px);
+}
+
+.login-card .form-heading h1 {
+  margin-top: 11px;
+  font-family: var(--font-heading);
+  font-size: 42px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.login-signup-link {
+  margin-top: 8px;
+}
+
 .site-footer {
   display: flex;
   min-height: 92px;
@@ -566,6 +688,22 @@ p {
     width: min(100% - 48px, 700px);
   }
 
+  .login-page {
+    width: min(100% - 48px, 700px);
+  }
+
+  .login-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .login-photo {
+    min-height: 360px;
+  }
+
+  .login-card {
+    padding: clamp(25px, 6vw, 47px);
+  }
+
   .hero {
     min-height: unset;
     grid-template-columns: 1fr;
@@ -583,6 +721,11 @@ p {
 
   .join-section {
     grid-template-columns: 1fr;
+  }
+
+  .todos-section {
+    grid-template-columns: 1fr;
+    gap: 20px;
     gap: 40px;
     padding: 64px 6%;
   }
@@ -599,6 +742,33 @@ p {
 @media (max-width: 560px) {
   .site-shell {
     width: min(100% - 36px, 480px);
+  }
+
+  .login-page {
+    width: min(100% - 36px, 480px);
+    padding: 18px 0;
+  }
+
+  .login-brand {
+    margin-bottom: 18px;
+  }
+
+  .login-photo {
+    min-height: 270px;
+  }
+
+  .login-photo-caption {
+    right: 18px;
+    bottom: 18px;
+    left: 18px;
+  }
+
+  .login-photo-caption > p:last-child {
+    font-size: 26px;
+  }
+
+  .login-card {
+    padding: 25px 18px;
   }
 
   .site-header {
