@@ -4,7 +4,14 @@ import { supabase } from "./lib/supabase";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [message, setMessage] = useState(() =>
+    new URLSearchParams(window.location.search).has("registered")
+      ? {
+          type: "success",
+          text: "Your account is registered. Sign in to continue to events.",
+        }
+      : { type: "", text: "" },
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event) {
@@ -32,11 +39,7 @@ export default function Login() {
         return;
       }
 
-      setMessage({
-        type: "success",
-        text: "You are signed in. Welcome back to MotoMeet!",
-      });
-      setPassword("");
+      window.location.assign("/events");
     } catch (error) {
       setMessage({
         type: "error",

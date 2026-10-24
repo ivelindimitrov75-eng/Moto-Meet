@@ -125,7 +125,7 @@ export default function App() {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: form.email.trim(),
         password: form.password,
         options: {
@@ -138,13 +138,7 @@ export default function App() {
         return;
       }
 
-      setMessage({
-        type: "success",
-        text: data.session
-          ? "Your account is ready. Welcome to MotoMeet!"
-          : "Your account is started. Check your email to confirm it.",
-      });
-      setForm(emptyForm);
+      window.location.assign("/login?registered=1");
     } catch {
       setMessage({
         type: "error",

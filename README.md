@@ -104,15 +104,19 @@ creation errors. Community updates show loading, empty, and query error states.
 
 - Riders can open `/events` from the home page and sign in to book one of three
   events: a cafe meetup, a concert, or a scenic tour.
+- After registration, riders are sent to the login page; after signing in,
+  they are sent to the events page.
 - Each rider can save and edit their name, email, motorcycle make, model, and
   optional year for each event, or delete their own booking.
-- Riders can optionally upload a motorcycle photo. Photos are private and
-  limited to 5 MB.
-- Supabase Auth is required. Row-level security and storage policies ensure
-  riders can only manage their own booking information and photos.
+### Step 4: Editing routes and participant options
+- Event participants' names, motorcycle details, and motorcycle photos are
+  visible to all visitors. Only the account owner can edit or delete their
+  booking or change their photo.
+- Riders can optionally upload a motorcycle photo, limited to 5 MB.
+- Supabase Auth is required to book or manage participation. Row-level security
+  protects booking changes and personal email addresses.
 
 
 ## Later steps
 
-Login, event pages, bookings, motorcycle details, and motorcycle photos will
-be added in later steps.
+- Simple admin options will be added to help manage events and bookings.

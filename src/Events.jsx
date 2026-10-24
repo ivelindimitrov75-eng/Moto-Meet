@@ -93,29 +93,41 @@ export default function Events() {
       try {
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
-        if (!userData.user) {
-          if (isMounted) setUser(null);
-          return;
-        }
-        if (isMounted) setUser(userData.user);
+        const currentUser = userData.user;
+        if (isMounted) setUser(currentUser);
 
-        const { data, error } = await supabase
-          .from("event_bookings")
+        const { data: publicData, error } = await supabase
+          .from("public_event_bookings")
           .select("*")
           .order("created_at", { ascending: true });
         if (error) throw error;
 
-        const bookingMap = Object.fromEntries(
-          (data ?? []).map((booking) => [booking.event_id, booking]),
+        let ownBookings = [];
+        if (currentUser) {
+          const { data, error: ownBookingsError } = await supabase
+            .from("event_bookings")
+            .select("*")
+            .eq("user_id", currentUser.id);
+          if (ownBookingsError) throw ownBookingsError;
+          ownBookings = data ?? [];
+        }
+        const ownBookingMap = new Map(
+          ownBookings.map((booking) => [booking.id, booking]),
         );
+        const bookingMap = {};
         const urls = {};
-        for (const booking of data ?? []) {
-          if (!booking.photo_path) continue;
-          const { data: photoData, error: photoError } = await supabase.storage
-            .from(PHOTO_BUCKET)
-            .createSignedUrl(booking.photo_path, 3600);
-          if (photoError) throw photoError;
-          urls[booking.event_id] = photoData.signedUrl;
+        for (const booking of publicData ?? []) {
+          const ownBooking = ownBookingMap.get(booking.id);
+          const visibleBooking = ownBooking
+            ? { ...booking, email: ownBooking.email, is_owner: true }
+            : { ...booking, is_owner: false };
+          bookingMap[booking.event_id] ??= [];
+          bookingMap[booking.event_id].push(visibleBooking);
+          if (booking.photo_path) {
+            urls[booking.id] = supabase.storage
+              .from(PHOTO_BUCKET)
+              .getPublicUrl(booking.photo_path).data.publicUrl;
+          }
         }
         if (isMounted) {
           setBookings(bookingMap);
@@ -200,7 +212,9 @@ export default function Events() {
     setIsSaving(true);
     let uploadedPath = "";
     let uploadedPhotoUrl = "";
-    const currentBooking = bookings[activeEvent];
+    const currentBooking = (bookings[activeEvent] ?? []).find(
+      (booking) => booking.is_owner,
+    );
 
     try {
       if (photo) {
@@ -241,9 +255,16 @@ export default function Events() {
           .remove([currentBooking.photo_path]);
         if (removeError) photoWarning = ` Your previous photo could not be removed: ${removeError.message}`;
       }
-      const nextBookings = { ...bookings, [activeEvent]: data };
+      const nextBookings = { ...bookings };
+      nextBookings[activeEvent] = currentBooking
+        ? (bookings[activeEvent] ?? []).map((booking) =>
+            booking.id === data.id
+              ? { ...data, ...record, is_owner: true }
+              : booking,
+          )
+        : [...(bookings[activeEvent] ?? []), { ...data, ...record, is_owner: true }];
       const nextUrls = { ...photoUrls };
-      if (uploadedPhotoUrl) nextUrls[activeEvent] = uploadedPhotoUrl;
+      if (uploadedPhotoUrl) nextUrls[data.id] = uploadedPhotoUrl;
       setBookings(nextBookings);
       setPhotoUrls(nextUrls);
       closeForm();
@@ -274,9 +295,8 @@ export default function Events() {
     }
   }
 
-  async function deleteBooking(eventId) {
+  async function deleteBooking(eventId, booking) {
     if (!supabase) return;
-    const booking = bookings[eventId];
     if (!booking) return;
     setIsSaving(true);
     setMessage({ type: "", text: "" });
@@ -288,12 +308,14 @@ export default function Events() {
       if (error) throw error;
       setBookings((current) => {
         const next = { ...current };
-        delete next[eventId];
+        next[eventId] = (current[eventId] ?? []).filter(
+          (item) => item.id !== booking.id,
+        );
         return next;
       });
       setPhotoUrls((current) => {
         const next = { ...current };
-        delete next[eventId];
+        delete next[booking.id];
         return next;
       });
       if (booking.photo_path) {
@@ -342,14 +364,17 @@ export default function Events() {
         {!pageError && isLoading && <p role="status">Loading your event bookings...</p>}
         {!pageError && !isLoading && !user && (
           <p className="form-message error" role="status">
-            Please <a href="/login">sign in</a> to book an event and manage your participation.
+            Anyone can view event bookings. <a href="/login">Sign in</a> to book an event or manage your own participation.
           </p>
         )}
         {message.text && <p className={`form-message ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}
 
         <section className="events-grid" aria-label="Upcoming motorcycle events">
           {events.map((item) => {
-            const booking = bookings[item.id];
+            const eventBookings = bookings[item.id] ?? [];
+            const ownBooking = eventBookings.find(
+              (booking) => booking.is_owner,
+            );
             return (
               <article className="event-card" key={item.id}>
                 <img className="event-image" src={item.image} alt={item.alt} />
@@ -357,16 +382,19 @@ export default function Events() {
                   <p className="event-type">{item.type}</p>
                   <h2>{item.title}</h2>
                   <p className="event-description">{item.description}</p>
-                  {booking ? (
-                    <div className="booking-details">
-                      {photoUrls[item.id] && <img className="motorcycle-photo" src={photoUrls[item.id]} alt={`${booking.motorcycle_make} ${booking.motorcycle_model}`} />}
+                  {eventBookings.map((booking) => (
+                    <div className="booking-details" key={booking.id}>
+                      {photoUrls[booking.id] && <img className="motorcycle-photo" src={photoUrls[booking.id]} alt={`${booking.motorcycle_make} ${booking.motorcycle_model}`} />}
                       <p><strong>{booking.rider_name}</strong> · {booking.motorcycle_year ? `${booking.motorcycle_year} ` : ""}{booking.motorcycle_make} {booking.motorcycle_model}</p>
-                      <div className="booking-actions">
-                        <button className="button button-primary" type="button" onClick={() => openForm(item.id, booking)}>Edit booking</button>
-                        <button className="text-button" type="button" disabled={isSaving} onClick={() => deleteBooking(item.id)}>Delete</button>
-                      </div>
+                      {booking.is_owner && (
+                        <div className="booking-actions">
+                          <button className="button button-primary" type="button" onClick={() => openForm(item.id, booking)}>Edit booking</button>
+                          <button className="text-button" type="button" disabled={isSaving} onClick={() => deleteBooking(item.id, booking)}>Delete</button>
+                        </div>
+                      )}
                     </div>
-                  ) : user && !isLoading ? (
+                  ))}
+                  {user && !ownBooking && !isLoading ? (
                     <button className="button button-primary event-book-button" type="button" onClick={() => openForm(item.id)}>Book this event <span aria-hidden="true">↗</span></button>
                   ) : null}
 
@@ -385,7 +413,7 @@ export default function Events() {
                       <input id={`${item.id}-year`} name="motorcycle_year" type="number" min="1885" max={new Date().getFullYear() + 1} value={form.motorcycle_year} onChange={handleChange} />
                       <label htmlFor={`${item.id}-photo`}>Motorcycle photo (optional, max 5 MB)</label>
                       <input id={`${item.id}-photo`} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} />
-                      {booking?.photo_path && <p className="form-smallprint">Choose a new photo to replace your current one.</p>}
+                      {ownBooking?.photo_path && <p className="form-smallprint">Choose a new photo to replace your current one.</p>}
                       {message.text && <p className={`form-message ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}
                       <button className="button button-primary submit-button" type="submit" disabled={isSaving}>{isSaving ? "Saving..." : editing ? "Save changes" : "Confirm booking"}</button>
                       <button className="text-button" type="button" onClick={closeForm}>Cancel</button>

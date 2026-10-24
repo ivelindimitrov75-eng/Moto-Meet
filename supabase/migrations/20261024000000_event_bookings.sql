@@ -20,6 +20,16 @@ create policy "Users can view their own event bookings"
   on public.event_bookings for select to authenticated
   using ((select auth.uid()) = user_id);
 
+create or replace view public.public_event_bookings
+with (security_invoker = false)
+as
+select id, event_id, rider_name, motorcycle_make, motorcycle_model,
+  motorcycle_year, photo_path, created_at
+from public.event_bookings;
+
+revoke all on public.public_event_bookings from public;
+grant select on public.public_event_bookings to anon, authenticated;
+
 drop policy if exists "Users can create their own event bookings" on public.event_bookings;
 create policy "Users can create their own event bookings"
   on public.event_bookings for insert to authenticated
@@ -37,7 +47,7 @@ create policy "Users can delete their own event bookings"
   using ((select auth.uid()) = user_id);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('motorcycle-photos', 'motorcycle-photos', false, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+values ('motorcycle-photos', 'motorcycle-photos', true, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,
