@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./lib/supabase";
 import AuthNavigation from "./AuthNavigation";
 
@@ -14,6 +15,8 @@ export default function Login() {
       : { type: "", text: "" },
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -40,7 +43,13 @@ export default function Login() {
         return;
       }
 
-      window.location.assign("/events");
+      const nextPath = location.state?.from?.pathname;
+      navigate(
+        nextPath?.startsWith("/") && !nextPath.startsWith("//")
+          ? `${nextPath}${location.state?.from?.search ?? ""}`
+          : "/events",
+        { replace: true },
+      );
     } catch (error) {
       setMessage({
         type: "error",
@@ -57,14 +66,14 @@ export default function Login() {
   return (
     <main className="login-page">
       <div className="login-topbar">
-        <a className="brand login-brand" href="/" aria-label="MotoMeet home">
+        <Link className="brand login-brand" to="/" aria-label="MotoMeet home">
           <span className="brand-mark" aria-hidden="true">
             M
           </span>
           <span>
             MOTO<span className="brand-accent">MEET</span>
           </span>
-        </a>
+        </Link>
         <AuthNavigation hideWhenSignedOut />
       </div>
 
@@ -133,7 +142,7 @@ export default function Login() {
               {!isSubmitting && <span aria-hidden="true">↗</span>}
             </button>
             <p className="form-smallprint login-signup-link">
-              New to the crew? <a href="/#join">Create an account</a>
+              New to the crew? <Link to="/register">Create an account</Link>
             </p>
           </form>
         </div>

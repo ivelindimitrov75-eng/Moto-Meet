@@ -1,19 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "./lib/supabase";
+import { useAuth } from "./AuthContext";
 
 export default function AuthNavigation({ hideWhenSignedOut = false }) {
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  const { user } = useAuth();
   const [errorMessage, setErrorMessage] = useState("");
-
-  useEffect(() => {
-    if (!supabase) return undefined;
-
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsSignedIn(Boolean(session));
-    });
-
-    return () => data.subscription.unsubscribe();
-  }, []);
+  const navigate = useNavigate();
 
   async function handleSignOut() {
     setErrorMessage("");
@@ -22,7 +15,7 @@ export default function AuthNavigation({ hideWhenSignedOut = false }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      window.location.assign("/");
+      navigate("/");
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -34,12 +27,12 @@ export default function AuthNavigation({ hideWhenSignedOut = false }) {
 
   return (
     <>
-      {isSignedIn ? (
+      {user ? (
         <button className="nav-logout" type="button" onClick={handleSignOut}>
           Log out
         </button>
       ) : !hideWhenSignedOut ? (
-        <a href="/login">Log in</a>
+        <Link to="/login">Log in</Link>
       ) : null}
       {errorMessage && (
         <span className="nav-auth-error" role="alert">

@@ -1,36 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { supabase } from "./lib/supabase";
 import AuthNavigation from "./AuthNavigation";
+import { useAuth } from "./AuthContext";
 
 const PHOTO_BUCKET = "motorcycle-photos";
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
-const events = [
-  {
-    id: "cafe",
-    type: "CAFE MEETUP",
-    title: "Coffee & Chrome",
-    description: "A relaxed meetup for good coffee and stories from the road.",
-    image: "/images/event-cafe.jpg",
-    alt: "Motorcycles inside a motorcycle cafe",
-  },
-  {
-    id: "concert",
-    type: "LIVE CONCERT",
-    title: "Moto Night Live",
-    description: "Meet up with riders for a night of live music and engines.",
-    image: "/images/event-concert.jpg",
-    alt: "A motorcycle at a live music concert",
-  },
-  {
-    id: "tour",
-    type: "SCENIC TOUR",
-    title: "Open Road Escape",
-    description: "Pack your riding gear for a scenic motorcycle tour and campout.",
-    image: "/images/event-tour.webp",
-    alt: "A touring motorcycle parked beside a tent in the mountains",
-  },
-];
-
 const blankForm = {
   rider_name: "",
   email: "",
@@ -69,7 +44,9 @@ function getSupabaseErrorMessage(error, fallback) {
 }
 
 export default function Events() {
-  const [user, setUser] = useState(null);
+  const { eventId } = useParams();
+  const { user, isLoading: isLoadingAuth } = useAuth();
+  const [eventInfo, setEventInfo] = useState(null);
   const [bookings, setBookings] = useState({});
   const [photoUrls, setPhotoUrls] = useState({});
   const [form, setForm] = useState(blankForm);
@@ -85,31 +62,48 @@ export default function Events() {
     let isMounted = true;
 
     async function loadBookings() {
+      if (isLoadingAuth) return;
       if (!supabase) {
         setPageError("Event bookings are unavailable. Please check the Supabase settings.");
         setIsLoading(false);
         return;
       }
 
+      setIsLoading(true);
+      setPageError("");
+      setEventInfo(null);
+      setBookings({});
+      setPhotoUrls({});
       try {
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const currentUser = sessionData.session?.user ?? null;
-        if (isMounted) setUser(currentUser);
+        const { data: eventData, error: eventError } = await supabase
+          .from("event_catalog")
+          .select("*")
+          .eq("id", eventId)
+          .maybeSingle();
+        if (eventError) throw eventError;
+        if (!eventData) {
+          if (isMounted) {
+            setEventInfo(null);
+            setBookings({});
+          }
+          return;
+        }
+        if (isMounted) setEventInfo(eventData);
 
         const { data: publicData, error } = await supabase
           .from("public_event_bookings")
           .select("*")
+          .eq("event_id", eventId)
           .order("created_at", { ascending: true });
         if (error) throw error;
 
         let ownBookings = [];
-        if (currentUser) {
+        if (user) {
           const { data, error: ownBookingsError } = await supabase
             .from("event_bookings")
             .select("*")
-            .eq("user_id", currentUser.id);
+            .eq("user_id", user.id)
+            .eq("event_id", eventId);
           if (ownBookingsError) throw ownBookingsError;
           ownBookings = data ?? [];
         }
@@ -123,8 +117,8 @@ export default function Events() {
           const visibleBooking = ownBooking
             ? { ...booking, email: ownBooking.email, is_owner: true }
             : { ...booking, is_owner: false };
-          bookingMap[booking.event_id] ??= [];
-          bookingMap[booking.event_id].push(visibleBooking);
+          bookingMap[eventId] ??= [];
+          bookingMap[eventId].push(visibleBooking);
           if (booking.photo_path) {
             urls[booking.id] = supabase.storage
               .from(PHOTO_BUCKET)
@@ -153,7 +147,7 @@ export default function Events() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [eventId, user, isLoadingAuth]);
 
   function openForm(eventId, booking = null) {
     setActiveEvent(eventId);
@@ -346,33 +340,38 @@ export default function Events() {
   return (
     <div className="site-shell events-shell">
       <header className="site-header">
-        <a className="brand" href="/" aria-label="MotoMeet home">
+        <Link className="brand" to="/" aria-label="MotoMeet home">
           <span className="brand-mark" aria-hidden="true">M</span>
           <span>MOTO<span className="brand-accent">MEET</span></span>
-        </a>
+        </Link>
         <nav className="main-nav" aria-label="Main navigation">
-          <a href="/">Home</a>
+          <Link to="/">Home</Link>
+          <Link to="/events">Events</Link>
+          {user && <Link to="/my-bookings">My bookings</Link>}
           <AuthNavigation />
         </nav>
       </header>
       <main className="events-main">
         <section className="events-intro">
-          <p className="eyebrow"><span className="eyebrow-line" />THE NEXT RIDE IS YOURS</p>
-          <h1>Meet up. <span>Ride out.</span></h1>
-          <p>Pick an event and tell us a little about you and your motorcycle.</p>
+          <p className="eyebrow"><span className="eyebrow-line" />EVENT DETAILS</p>
+          {eventInfo && <h1>{eventInfo.title}</h1>}
+          {!eventInfo && !isLoading && !pageError && <h1>Event <span>not found.</span></h1>}
+          {eventInfo && <p>{eventInfo.description}</p>}
+          <p><Link to="/events">← Back to all events</Link></p>
         </section>
 
         {pageError && <p className="form-message error" role="alert">{pageError}</p>}
-        {!pageError && isLoading && <p role="status">Loading your event bookings...</p>}
+        {!pageError && isLoading && <p role="status">Loading event details...</p>}
+        {!pageError && !isLoading && !eventInfo && <p role="status">This event could not be found.</p>}
         {!pageError && !isLoading && !user && (
           <p className="form-message error" role="status">
-            Anyone can view event bookings. <a href="/login">Sign in</a> to book an event or manage your own participation.
+            Anyone can view event bookings. <Link to="/login">Sign in</Link> to book this event.
           </p>
         )}
         {message.text && <p className={`form-message ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}
 
-        <section className="events-grid" aria-label="Upcoming motorcycle events">
-          {events.map((item) => {
+        {eventInfo && <section className="event-detail" aria-label="Event and participants">
+          {[eventInfo].map((item) => {
             const eventBookings = bookings[item.id] ?? [];
             const ownBooking = eventBookings.find(
               (booking) => booking.is_owner,
@@ -400,12 +399,15 @@ export default function Events() {
                           )}
                           <div className="booking-rider">
                             <p>
-                              <strong>{booking.rider_name}</strong>
+                              <Link to={`/participants/${booking.id}`}>
+                                <strong>{booking.rider_name}</strong>
+                              </Link>
                             </p>
                             <p>
                               {booking.motorcycle_year ? `${booking.motorcycle_year} ` : ""}
                               {booking.motorcycle_make} {booking.motorcycle_model}
                             </p>
+                            <Link className="participant-link" to={`/participants/${booking.id}`}>Participant details</Link>
                           </div>
                           {booking.is_owner && (
                             <div className="booking-actions">
@@ -443,13 +445,13 @@ export default function Events() {
               </article>
             );
           })}
-        </section>
+        </section>}
       </main>
       <footer className="site-footer">
-        <a className="brand footer-brand" href="/">
+        <Link className="brand footer-brand" to="/">
           <span className="brand-mark" aria-hidden="true">M</span>
           <span>MOTO<span className="brand-accent">MEET</span></span>
-        </a>
+        </Link>
         <p>Good roads are better together.</p>
         <span className="footer-year">MOTOMEET</span>
       </footer>
