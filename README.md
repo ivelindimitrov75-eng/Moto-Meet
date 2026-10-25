@@ -116,6 +116,15 @@ creation errors. Community updates show loading, empty, and query error states.
 - Supabase Auth is required to book or manage participation. Row-level security
   protects booking changes and personal email addresses.
 
+### Step 5: Improve event layout and add logout
+
+- The "Book this event" button appears below the event description.
+- Event participants are shown in a vertical list below the booking button,
+  with each rider's motorcycle photo, name, and motorcycle details.
+- Signed-in users see a "Log out" button in the navigation on the home, Events,
+  and login pages. Logging out ends the Supabase session and returns the rider
+  to the home page; guests see a "Log in" link instead.
+- If logout fails, the site displays an error message.
 
 ## Later steps
 

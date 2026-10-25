@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
+import AuthNavigation from "./AuthNavigation";
 
 const ridePhotos = [
   {
@@ -164,7 +165,7 @@ export default function App() {
           <a href="#ride">The ride</a>
           <a href="#community">The community</a>
           <a href="/events">Events</a>
-          <a href="/login">Log in</a>
+          <AuthNavigation />
           <a className="nav-join" href="#join">
             Join us <span aria-hidden="true">↗</span>
           </a>

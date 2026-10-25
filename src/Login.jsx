@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "./lib/supabase";
+import AuthNavigation from "./AuthNavigation";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -55,14 +56,17 @@ export default function Login() {
 
   return (
     <main className="login-page">
-      <a className="brand login-brand" href="/" aria-label="MotoMeet home">
-        <span className="brand-mark" aria-hidden="true">
-          M
-        </span>
-        <span>
-          MOTO<span className="brand-accent">MEET</span>
-        </span>
-      </a>
+      <div className="login-topbar">
+        <a className="brand login-brand" href="/" aria-label="MotoMeet home">
+          <span className="brand-mark" aria-hidden="true">
+            M
+          </span>
+          <span>
+            MOTO<span className="brand-accent">MEET</span>
+          </span>
+        </a>
+        <AuthNavigation hideWhenSignedOut />
+      </div>
 
       <section className="login-layout" aria-labelledby="login-heading">
         <div className="login-photo">

@@ -105,6 +105,25 @@ input {
   color: var(--color-accent);
 }
 
+.nav-logout {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  transition: color 160ms ease;
+}
+
+.nav-logout:hover {
+  color: var(--color-accent);
+}
+
+.nav-auth-error {
+  color: #ff9b80;
+  font-size: 11px;
+}
+
 .nav-join {
   display: inline-flex;
   align-items: center;
@@ -578,8 +597,15 @@ p {
   padding: 30px 0;
 }
 
-.login-brand {
+.login-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 28px;
+}
+
+.login-brand {
+  margin-bottom: 0;
 }
 
 .login-layout {
@@ -731,20 +757,35 @@ p {
 }
 
 .booking-details {
-  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid rgb(255 255 255 / 10%);
   color: #d5d6d0;
   font-size: 12px;
   line-height: 1.6;
 }
 
+.booking-list {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
 .motorcycle-photo {
-  width: 100%;
-  max-height: 180px;
-  margin-bottom: 12px;
+  width: 78px;
+  height: 64px;
   object-fit: cover;
 }
 
+.booking-rider p + p {
+  color: var(--color-muted);
+}
+
 .booking-actions {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -917,7 +958,7 @@ p {
     padding: 18px 0;
   }
 
-  .login-brand {
+  .login-topbar {
     margin-bottom: 18px;
   }
 
@@ -977,6 +1018,10 @@ p {
   }
 
   .main-nav a[href="/events"] {
+    display: inline;
+  }
+
+  .main-nav a[href="/login"] {
     display: inline;
   }
 

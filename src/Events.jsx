@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
+import AuthNavigation from "./AuthNavigation";
 
 const PHOTO_BUCKET = "motorcycle-photos";
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
@@ -91,9 +92,10 @@ export default function Events() {
       }
 
       try {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError) throw userError;
-        const currentUser = userData.user;
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const currentUser = sessionData.session?.user ?? null;
         if (isMounted) setUser(currentUser);
 
         const { data: publicData, error } = await supabase
@@ -350,7 +352,7 @@ export default function Events() {
         </a>
         <nav className="main-nav" aria-label="Main navigation">
           <a href="/">Home</a>
-          <a href="/login">Log in</a>
+          <AuthNavigation />
         </nav>
       </header>
       <main className="events-main">
@@ -382,21 +384,39 @@ export default function Events() {
                   <p className="event-type">{item.type}</p>
                   <h2>{item.title}</h2>
                   <p className="event-description">{item.description}</p>
-                  {eventBookings.map((booking) => (
-                    <div className="booking-details" key={booking.id}>
-                      {photoUrls[booking.id] && <img className="motorcycle-photo" src={photoUrls[booking.id]} alt={`${booking.motorcycle_make} ${booking.motorcycle_model}`} />}
-                      <p><strong>{booking.rider_name}</strong> · {booking.motorcycle_year ? `${booking.motorcycle_year} ` : ""}{booking.motorcycle_make} {booking.motorcycle_model}</p>
-                      {booking.is_owner && (
-                        <div className="booking-actions">
-                          <button className="button button-primary" type="button" onClick={() => openForm(item.id, booking)}>Edit booking</button>
-                          <button className="text-button" type="button" disabled={isSaving} onClick={() => deleteBooking(item.id, booking)}>Delete</button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
                   {user && !ownBooking && !isLoading ? (
                     <button className="button button-primary event-book-button" type="button" onClick={() => openForm(item.id)}>Book this event <span aria-hidden="true">↗</span></button>
                   ) : null}
+                  {eventBookings.length > 0 && (
+                    <ul className="booking-list" aria-label={`${item.title} participants`}>
+                      {eventBookings.map((booking) => (
+                        <li className="booking-details" key={booking.id}>
+                          {photoUrls[booking.id] && (
+                            <img
+                              className="motorcycle-photo"
+                              src={photoUrls[booking.id]}
+                              alt={`${booking.motorcycle_make} ${booking.motorcycle_model}`}
+                            />
+                          )}
+                          <div className="booking-rider">
+                            <p>
+                              <strong>{booking.rider_name}</strong>
+                            </p>
+                            <p>
+                              {booking.motorcycle_year ? `${booking.motorcycle_year} ` : ""}
+                              {booking.motorcycle_make} {booking.motorcycle_model}
+                            </p>
+                          </div>
+                          {booking.is_owner && (
+                            <div className="booking-actions">
+                              <button className="button button-primary" type="button" onClick={() => openForm(item.id, booking)}>Edit booking</button>
+                              <button className="text-button" type="button" disabled={isSaving} onClick={() => deleteBooking(item.id, booking)}>Delete</button>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   {activeEvent === item.id && (
                     <form className="register-form event-form" onSubmit={handleSubmit}>
